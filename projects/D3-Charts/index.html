@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Top 20 Movies Bar Chart</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .chart-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .bar {
+            fill: steelblue;
+        }
+        .bar-label {
+            fill: white;
+            font-size: 12px;
+            text-anchor: middle;
+        }
+        .axis-label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .y-axis text {
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <script>
+            const width = 900;
+            const height = 600; 
+            const margin = { top: 20, right: 30, bottom: 50, left: 250 }; // Increased left margin to 250
+
+            const svg = d3.select(".chart-container")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height); 
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left}, ${margin.top})`); 
+
+            const scaleY = d3.scaleBand()
+                .rangeRound([0, height - margin.top - margin.bottom])
+                .padding(0.1);
+
+            const scaleX = d3.scaleLinear()
+                .range([0, width - margin.left - margin.right]);
+
+            d3.csv("top-movies.csv").then(function (data) { 
+                // Sort data by IMDB Ranking in descending order and take the top 20
+                data = data.sort((a, b) => d3.descending(+a["IMDB Ranking"], +b["IMDB Ranking"])).slice(0, 20);
+
+                scaleY.domain(data.map(d => d.Name));
+                scaleX.domain([0, d3.max(data, d => +d["IMDB Ranking"])]);
+
+                // Add bars
+                g.selectAll(".bar")
+                    .data(data)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar")
+                    .attr("x", 0)
+                    .attr("y", d => scaleY(d.Name))
+                    .attr("width", d => scaleX(+d["IMDB Ranking"])) 
+                    .attr("height", scaleY.bandwidth());
+
+                // Add labels inside bars
+                g.selectAll(".bar-label")
+                    .data(data)
+                    .enter()
+                    .append("text")
+                    .attr("class", "bar-label")
+                    .attr("x", d => scaleX(+d["IMDB Ranking"]) - 25)
+                    .attr("y", d => scaleY(d.Name) + scaleY.bandwidth() / 2)
+                    .attr("dy", ".35em")
+                    .text(d => d["IMDB Ranking"]);
+
+                // Add x-axis
+                svg.append("g")
+                    .attr("transform", `translate(${margin.left},${height - margin.bottom})`)
+                    .call(d3.axisBottom(scaleX))
+                    .append("text")
+                    .attr("class", "axis-label")
+                    .attr("x", width / 2)
+                    .attr("y", 40)
+                    .text("IMDB Ranking");
+
+                // Add y-axis
+                svg.append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`)
+                    .attr("class", "y-axis")
+                    .call(d3.axisLeft(scaleY))
+                    .selectAll("text")
+                    .style("font-size", "12px") // Adjust font size for readability
+                    .style("text-anchor", "end") // Align text to the end for better readability
+                    .attr("dx", "-0.5em"); // Add a little padding from the axis line
+            });
+        </script>
+    </div>
+</body>
+</html>
